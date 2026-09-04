@@ -1,7 +1,7 @@
 -- Выполнить один раз в Supabase Dashboard → SQL Editor (проект fzcswoywkwdkdpsowiqz).
 -- Таблица истории заявок с сайта. RLS включён и без единой policy для anon/authenticated,
 -- поэтому publishable-ключ (используемый в браузере) не может ни читать, ни писать сюда —
--- доступ есть только у service_role (используется исключительно в Netlify-функциях).
+-- доступ есть только у service_role (используется исключительно в Edge Functions).
 
 create table public.orders (
   id bigint generated always as identity primary key,
