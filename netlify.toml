@@ -1,0 +1,29 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Заголовки безопасности для всех страниц.
+# HSTS не указан — Netlify отдаёт его сам (max-age=31536000; includeSubDomains; preload).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Разрешены только те внешние источники, которые сайт реально использует:
+    # gstatic — SDK Firebase, fonts.googleapis/gstatic — шрифты,
+    # *.googleapis.com в connect-src — Firestore и вход в админку.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+    # Сайт нельзя открыть в чужом iframe — защита от кликджекинга.
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Устаревший фильтр XSS отключён намеренно: он сам по себе создаёт уязвимости,
+    # его роль полностью закрывает CSP выше.
+    X-XSS-Protection = "0"
+
+# Админка: не индексировать и не кэшировать.
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, max-age=0"

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://fzcswoywkwdkdpsowiqz.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
+<!-- CSP задан в разметке: на GitHub Pages нельзя выставлять HTTP-заголовки,
+     как это делал netlify.toml. frame-ancestors в meta не работает — от
+     встраивания в чужой iframe защищает скрипт внизу страницы. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пралеска — управление наличием</title>
+<script>
+  // Адрес бэкенда. Сайт лежит на статике (GitHub Pages), а функции — в Supabase,
+  // поэтому запросы уходят на другой домен. Переезд бэкенда = правка этой строки.
+  const API_BASE = 'https://fzcswoywkwdkdpsowiqz.supabase.co/functions/v1';
+  // Замена X-Frame-Options: на GitHub Pages заголовки не выставить,
+  // а frame-ancestors из <meta> браузеры игнорируют.
+  if (self !== top) top.location = self.location;
+</script>
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF6EF; --ink:#2B2333; --ink-soft:#5B5266;
+    --violet:#6C56A6; --violet-deep:#463579; --violet-pale:#E7DFF4;
+    --sage-deep:#5B7250; --sage-pale:#E7F0E3;
+    --gold:#C6A15B; --white:#FFFFFF;
+    --shadow:0 20px 50px -25px rgba(43,35,51,0.35);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100vh;
+    font-family:'Manrope',sans-serif;color:var(--ink);
+    background:var(--ivory);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  h1{font-family:'Playfair Display',serif;font-weight:700;margin:0 0 6px;font-size:26px;}
+  .sub{color:var(--ink-soft);font-size:14px;margin-bottom:28px;}
+  .card{
+    background:var(--white);border-radius:24px;box-shadow:var(--shadow);
+    padding:36px;width:100%;max-width:420px;
+  }
+  .wide{max-width:560px;}
+  label{display:block;font-size:13px;font-weight:700;margin-bottom:7px;}
+  input{
+    width:100%;padding:13px 15px;border-radius:12px;
+    border:1.5px solid rgba(43,35,51,0.16);
+    font-family:'Manrope';font-size:14.5px;color:var(--ink);
+    background:var(--ivory);margin-bottom:16px;
+  }
+  input:focus{border-color:var(--violet);outline:none;}
+  button{
+    width:100%;padding:14px;border:none;border-radius:100px;
+    background:var(--violet);color:#fff;font-weight:700;font-size:15px;
+    cursor:pointer;transition:background .2s;
+  }
+  button:hover{background:var(--violet-deep);}
+  button:disabled{opacity:.6;cursor:default;}
+  .error{color:#A44236;font-size:13.5px;margin-top:12px;display:none;}
+  .error.show{display:block;}
+  #adminPanel{display:none;}
+  .row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 0;border-top:1px solid rgba(43,35,51,0.09);
+  }
+  .row:last-of-type{border-bottom:1px solid rgba(43,35,51,0.09);}
+  .row .info{display:flex;align-items:center;gap:14px;min-width:0;}
+  .row .thumb{
+    width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;
+    background:var(--ivory);
+  }
+  .row .name{font-weight:700;font-size:15px;}
+  .row .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .switch{
+    position:relative;width:50px;height:28px;flex-shrink:0;margin-left:16px;
+  }
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2;}
+  .track{
+    position:absolute;inset:0;background:#E3DCD0;border-radius:100px;
+    transition:background .2s;
+  }
+  .track::before{
+    content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;
+    background:#fff;border-radius:50%;transition:transform .2s;
+    box-shadow:0 2px 4px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .track{background:var(--sage-deep);}
+  .switch input:checked + .track::before{transform:translateX(22px);}
+  .status-label{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .logout{width:auto;padding:8px 16px;font-size:13px;background:transparent;color:var(--ink-soft);border:1.5px solid rgba(43,35,51,0.16);}
+  .logout:hover{background:transparent;color:var(--ink);border-color:var(--ink);}
+  .save-note{font-size:13px;color:var(--sage-deep);margin-top:18px;min-height:18px;}
+  .section-title{font-family:'Playfair Display',serif;font-weight:700;font-size:19px;margin:32px 0 14px;}
+  .orders{display:flex;flex-direction:column;gap:10px;}
+  .order{
+    border:1.5px solid rgba(43,35,51,0.1);border-radius:14px;padding:14px 16px;
+  }
+  .order .order-top{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;font-size:14.5px;}
+  .order .order-top-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .order .order-time{font-weight:500;color:var(--ink-soft);font-size:12px;white-space:nowrap;}
+  .order .order-meta{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .order .order-comment{font-size:13px;margin-top:6px;}
+  .orders-empty, .orders-error{font-size:13.5px;color:var(--ink-soft);}
+  .orders-error{color:#A44236;}
+  .order-delete{
+    width:auto;padding:5px 12px;font-size:12px;font-weight:600;
+    background:transparent;color:#A44236;border:1.5px solid rgba(164,66,54,0.35);
+    border-radius:100px;
+  }
+  .order-delete:hover{background:rgba(164,66,54,0.08);}
+</style>
+</head>
+<body>
+
+<div class="card" id="loginCard">
+  <h1>Пралеска</h1>
+  <p class="sub">Вход в панель управления наличием</p>
+  <form id="loginForm">
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="username">
+    <label for="password">Пароль</label>
+    <input type="password" id="password" required autocomplete="current-password">
+    <button type="submit" id="loginBtn">Войти</button>
+    <p class="error" id="loginError">Неверный email или пароль.</p>
+  </form>
+</div>
+
+<div class="card wide" id="adminPanel">
+  <div class="top-row">
+    <div>
+      <h1>Наличие букетов</h1>
+      <p class="sub" style="margin-bottom:0;">Переключатель — букет виден на сайте как «В наличии» / «Под заказ»</p>
+    </div>
+    <button class="logout" id="logoutBtn">Выйти</button>
+  </div>
+  <div id="bouquetRows"></div>
+  <p class="save-note" id="saveNote"></p>
+
+  <div class="section-title">Последние заявки</div>
+  <div class="orders" id="ordersList"><p class="orders-empty">Загрузка...</p></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" integrity="sha384-TnlRYaR4JYz/lpaGuaiU61PjNberSA4vjLjtF+oRC/IkohkJqnWxw5EmDSOt1vA1" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+<script>
+/* ============================================================
+   Конфиг Firebase — совпадает с index.html
+   (Firebase Console → Project settings → General → Your apps).
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyATJl5DedUXZ0f4eN2QrCufLkeC9g6vLzI",
+  authDomain: "praleska-3ca3f.firebaseapp.com",
+  projectId: "praleska-3ca3f",
+  storageBucket: "praleska-3ca3f.firebasestorage.app",
+  messagingSenderId: "1065846309794",
+  appId: "1:1065846309794:web:4dde436b8f71fd0ec668fb",
+  measurementId: "G-SW4ZWQMSLF"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* Список должен совпадать по id с bouquets в index.html */
+const bouquets = [
+  {id:'r1', name:'«Нежность»', tag:'Букеты', price:'70 руб.', img:'img/bouquets/r1.jpg'},
+  {id:'r2', name:'«Признание»', tag:'Букеты', price:'95 руб.', img:'img/bouquets/r2.jpg'},
+  {id:'r3', name:'Букет из хризантем', tag:'Букеты', price:'150 руб.', img:'img/bouquets/r3.jpg'},
+  {id:'r4', name:'«Розовое облако»', tag:'Букеты', price:'80 руб.', img:'img/bouquets/r4.jpg'},
+  {id:'r5', name:'Букет ромашковый', tag:'Букеты', price:'110 руб.', img:'img/bouquets/r5.jpg'},
+  {id:'r6', name:'«Зефирка»', tag:'Букеты', price:'105 руб.', img:'img/bouquets/r6.jpg'},
+  {id:'r7', name:'«Признание» (мини)', tag:'Букеты', price:'65 руб.', img:'img/bouquets/r7.jpg'},
+  {id:'r8', name:'«Премиум»', tag:'Премиум', price:'215 руб.', img:'img/bouquets/r8.jpg'},
+  {id:'r9', name:'«Дерзость»', tag:'Букеты авторские', price:'245 руб.', img:'img/bouquets/r9.jpg'},
+  {id:'r10', name:'«Премиум микс»', tag:'Премиум', price:'200 руб.', img:'img/bouquets/r10.jpg'},
+  {id:'r11', name:'«Для неё»', tag:'Букеты', price:'125 руб.', img:'img/bouquets/r11.jpg'},
+  {id:'r12', name:'«Алая роза»', tag:'Букеты авторские', price:'155 руб.', img:'img/bouquets/r12.jpg'},
+  {id:'r13', name:'Букет из роз', tag:'Букеты авторские', price:'195 руб.', img:'img/bouquets/r13.jpg'},
+  {id:'r14', name:'«Шик»', tag:'Букеты авторские', price:'240 руб.', img:'img/bouquets/r14.jpg'},
+  {id:'r15', name:'Букет из роз', tag:'Букеты', price:'85 руб.', img:'img/bouquets/r15.jpg'},
+  {id:'r16', name:'Букет микс', tag:'Букеты', price:'135 руб.', img:'img/bouquets/r16.jpg'},
+  {id:'r17', name:'Букет из хризантем', tag:'Букеты', price:'95 руб.', img:'img/bouquets/r17.jpg'},
+  {id:'r18', name:'Букет «Вероника»', tag:'Букеты', price:'110 руб.', img:'img/bouquets/r18.jpg'},
+  {id:'r19', name:'Корзина из роз, 21 шт.', tag:'Корзина цветов', price:'195 руб.', img:'img/bouquets/r19.jpg'},
+  {id:'r20', name:'Корзина «Нежность»', tag:'Корзина цветов', price:'155 руб.', img:'img/bouquets/r20.jpg'},
+  {id:'r21', name:'Композиция из хризантем', tag:'Композиции', price:'80 руб.', img:'img/bouquets/r21.jpg'},
+  {id:'r22', name:'Букет из диантусов', tag:'Букеты', price:'65 руб.', img:'img/bouquets/r22.jpg'},
+  {id:'r23', name:'Букет «Для неё»', tag:'Букеты', price:'65 руб.', img:'img/bouquets/r23.jpg'},
+  {id:'r24', name:'Букет из белых роз', tag:'Букеты', price:'180 руб.', img:'img/bouquets/r24.jpg'},
+  {id:'r25', name:'Композиция в шляпной коробке «Акцент»', tag:'Композиции', price:'175 руб.', img:'img/bouquets/r25.jpg'},
+  {id:'r26', name:'Композиция «Очарование»', tag:'Композиции', price:'130 руб.', img:'img/bouquets/r26.jpg'},
+  {id:'r27', name:'Медведь с сердцем, 55 см', tag:'Шары и игрушки', price:'76 руб.', img:'img/bouquets/r27.jpg'},
+  {id:'r28', name:'Медведь Тедди, 50 см', tag:'Шары и игрушки', price:'78 руб.', img:'img/bouquets/r28.jpg'},
+  {id:'r29', name:'Розовый мишка, 50 см', tag:'Шары и игрушки', price:'70 руб.', img:'img/bouquets/r29.jpg'},
+  {id:'r30', name:'Плюшевый медведь, 55 см', tag:'Шары и игрушки', price:'73 руб.', img:'img/bouquets/r30.jpg'},
+  {id:'r31', name:'Композиция в сумочке', tag:'Композиции', price:'95 руб.', img:'img/bouquets/r31.jpg'},
+  {id:'r32', name:'Композиция из ромашек', tag:'Композиции', price:'75 руб.', img:'img/bouquets/r32.jpg'},
+  {id:'r33', name:'Шары-цифры с гелием, 100 см', tag:'Шары и игрушки', price:'27 руб.', img:'img/bouquets/r33.jpg'},
+  {id:'r34', name:'Мини-мишка', tag:'Шары и игрушки', price:'30 руб.', img:'img/bouquets/r34.jpg'},
+  {id:'r35', name:'Шар-звезда с гелием', tag:'Шары и игрушки', price:'10 руб.', img:'img/bouquets/r35.jpg'},
+  {id:'r36', name:'Шар-сердце с гелием', tag:'Шары и игрушки', price:'10 руб.', img:'img/bouquets/r36.jpg'},
+  {id:'r37', name:'Композиция в сумочке «Признание»', tag:'Композиции', price:'80 руб.', img:'img/bouquets/r37.jpg'},
+  {id:'r38', name:'Композиция микс', tag:'Композиции', price:'140 руб.', img:'img/bouquets/r38.jpg'},
+  {id:'r39', name:'Композиция «Барби»', tag:'Композиции', price:'120 руб.', img:'img/bouquets/r39.jpg'},
+  {id:'r40', name:'Композиция «От всего сердца»', tag:'Композиции', price:'90 руб.', img:'img/bouquets/r40.jpg'},
+  {id:'r41', name:'Букет «Любовь»', tag:'Букеты', price:'65 руб.', img:'img/bouquets/r41.jpg'},
+];
+
+const loginCard = document.getElementById('loginCard');
+const adminPanel = document.getElementById('adminPanel');
+const loginForm = document.getElementById('loginForm');
+const loginBtn = document.getElementById('loginBtn');
+const loginError = document.getElementById('loginError');
+const bouquetRows = document.getElementById('bouquetRows');
+const saveNote = document.getElementById('saveNote');
+const ordersList = document.getElementById('ordersList');
+
+/* ============================================================
+   Ограничение попыток входа: 3 неудачи — пауза 5 минут.
+   Счётчик живёт в localStorage этого браузера, поэтому защищает
+   от подбора «вручную», но не заменяет серверную защиту.
+   ============================================================ */
+const MAX_TRIES = 3;
+const LOCK_MS = 5 * 60 * 1000;
+const STORE_KEY = 'praleska_login_guard';
+
+function readGuard(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    return { fails: Number(raw.fails) || 0, until: Number(raw.until) || 0 };
+  }catch(err){
+    return { fails: 0, until: 0 };
+  }
+}
+
+function writeGuard(guard){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(guard));
+  }catch(err){ /* приватный режим — просто не запоминаем */ }
+}
+
+function clearGuard(){
+  try{
+    localStorage.removeItem(STORE_KEY);
+  }catch(err){ /* нечего чистить */ }
+}
+
+function lockLeft(){
+  return Math.max(0, readGuard().until - Date.now());
+}
+
+function formatLeft(ms){
+  const total = Math.ceil(ms / 1000);
+  const min = Math.floor(total / 60);
+  const sec = String(total % 60).padStart(2, '0');
+  return min + ':' + sec;
+}
+
+let lockTimer = null;
+
+function showError(text){
+  loginError.textContent = text;
+  loginError.classList.add('show');
+}
+
+/* Пока идёт пауза — форма заблокирована, а на кнопке тикает обратный отсчёт. */
+function applyLock(){
+  const left = lockLeft();
+  if(left <= 0){
+    clearInterval(lockTimer);
+    lockTimer = null;
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Войти';
+    loginError.classList.remove('show');
+    return;
+  }
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Повтор через ' + formatLeft(left);
+  showError('Слишком много неудачных попыток. Вход заблокирован на 5 минут.');
+  if(!lockTimer) lockTimer = setInterval(applyLock, 1000);
+}
+
+if(lockLeft() > 0) applyLock();
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(lockLeft() > 0){ applyLock(); return; }
+
+  loginError.classList.remove('show');
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Входим...';
+  try{
+    await auth.signInWithEmailAndPassword(
+      document.getElementById('email').value.trim(),
+      document.getElementById('password').value
+    );
+    clearGuard();
+  }catch(err){
+    const fails = readGuard().fails + 1;
+    if(fails >= MAX_TRIES){
+      writeGuard({ fails: 0, until: Date.now() + LOCK_MS });
+      document.getElementById('password').value = '';
+      applyLock();
+      return;
+    }
+    writeGuard({ fails, until: 0 });
+    const left = MAX_TRIES - fails;
+    showError('Неверный email или пароль. Осталось попыток: ' + left + '.');
+  }finally{
+    if(lockLeft() <= 0){
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Войти';
+    }
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+
+auth.onAuthStateChanged((user) => {
+  if(user){
+    loginCard.style.display = 'none';
+    adminPanel.style.display = 'block';
+    renderRows();
+    loadOrders();
+  }else{
+    loginCard.style.display = 'block';
+    adminPanel.style.display = 'none';
+  }
+});
+
+function renderRows(){
+  bouquetRows.innerHTML = '';
+  bouquets.forEach((b) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <div class="info">
+        <img class="thumb" src="${b.img}" alt="${b.name}" loading="lazy">
+        <div>
+          <div class="name">${b.name}</div>
+          <div class="meta">${b.tag} · ${b.price}</div>
+          <div class="status-label" id="label-${b.id}">Загрузка...</div>
+        </div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="toggle-${b.id}" checked>
+        <span class="track"></span>
+      </label>`;
+    bouquetRows.appendChild(row);
+
+    db.collection('bouquets').doc(b.id).onSnapshot((doc) => {
+      const available = !doc.exists || doc.data().available !== false;
+      document.getElementById('toggle-' + b.id).checked = available;
+      document.getElementById('label-' + b.id).textContent = available ? 'В наличии' : 'Под заказ';
+    });
+
+    document.getElementById('toggle-' + b.id).addEventListener('change', async (e) => {
+      const available = e.target.checked;
+      try{
+        await db.collection('bouquets').doc(b.id).set({available}, {merge:true});
+        saveNote.textContent = 'Сохранено ✓';
+        setTimeout(() => saveNote.textContent = '', 1500);
+      }catch(err){
+        saveNote.textContent = 'Не удалось сохранить — проверьте подключение.';
+      }
+    });
+  });
+}
+
+function formatOrderTime(iso){
+  try{
+    return new Date(iso).toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+  }catch(err){
+    return '';
+  }
+}
+
+/* История заявок хранится в Supabase; функция /api/orders проверяет
+   Firebase ID-токен текущего админа и только тогда отдаёт данные. */
+async function loadOrders(){
+  ordersList.innerHTML = '<p class="orders-empty">Загрузка...</p>';
+  try{
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(API_BASE + '/get-orders', { headers: { Authorization: 'Bearer ' + token } });
+    if(!res.ok) throw new Error('bad status');
+    const { orders } = await res.json();
+
+    if(!orders || !orders.length){
+      ordersList.innerHTML = '<p class="orders-empty">Заявок пока нет.</p>';
+      return;
+    }
+
+    ordersList.innerHTML = '';
+    orders.forEach((o) => {
+      const row = document.createElement('div');
+      row.className = 'order';
+
+      const top = document.createElement('div');
+      top.className = 'order-top';
+      const name = document.createElement('span');
+      name.textContent = o.name || '—';
+
+      const topRight = document.createElement('span');
+      topRight.className = 'order-top-right';
+      const time = document.createElement('span');
+      time.className = 'order-time';
+      time.textContent = formatOrderTime(o.created_at);
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'order-delete';
+      delBtn.textContent = 'Удалить';
+      delBtn.addEventListener('click', () => deleteOrder(o.id, row));
+      topRight.append(time, delBtn);
+
+      top.append(name, topRight);
+
+      const meta = document.createElement('div');
+      meta.className = 'order-meta';
+      meta.textContent = [o.phone, o.occasion].filter(Boolean).join(' · ');
+
+      row.append(top, meta);
+
+      if(o.comment){
+        const comment = document.createElement('div');
+        comment.className = 'order-comment';
+        comment.textContent = o.comment;
+        row.append(comment);
+      }
+
+      ordersList.appendChild(row);
+    });
+  }catch(err){
+    ordersList.innerHTML = '<p class="orders-error">Не удалось загрузить заявки.</p>';
+  }
+}
+
+async function deleteOrder(id, row){
+  if(!confirm('Удалить эту заявку?')) return;
+  try{
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(API_BASE + '/get-orders?id=' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + token },
+    });
+    if(!res.ok) throw new Error('bad status');
+    row.remove();
+    if(!ordersList.children.length){
+      ordersList.innerHTML = '<p class="orders-empty">Заявок пока нет.</p>';
+    }
+  }catch(err){
+    alert('Не удалось удалить заявку — проверьте подключение.');
+  }
+}
+</script>
+</body>
+</html>
