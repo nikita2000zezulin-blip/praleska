@@ -1009,7 +1009,7 @@
     /* ---------- ABOUT ---------- */
     .about-grid {
       display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 50px;
       align-items: center;
     }
@@ -1048,21 +1048,20 @@
       margin-top: 4px;
     }
 
+    /* Две фотографии рядом: витрина снаружи и торговый зал. */
     .about-visual {
-      height: 340px;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, var(--lilac), var(--ivory-deep));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow);
-      overflow: hidden;
+      height: 400px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
     .about-visual img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
     }
 
     /* ---------- REVIEWS ---------- */
@@ -1585,7 +1584,7 @@
 
       .about-visual {
         order: -1;
-        height: 220px;
+        height: 250px;
       }
 
       .contact-grid {
@@ -1944,7 +1943,8 @@
   <section class="section-pad" id="about">
     <div class="container about-grid">
       <div class="about-visual">
-        <img src="img/shop.jpg" alt="Цветочная мастерская «Пралеска» в Могилёве" loading="lazy">
+        <img src="img/shop-1.jpg" alt="Витрина цветочной мастерской «Пралеска» в Могилёве" loading="lazy">
+        <img src="img/shop-2.jpg" alt="Торговый зал «Пралески»: холодильные витрины с букетами и живыми цветами" loading="lazy">
       </div>
       <div class="about-copy">
         <div class="eyebrow">О мастерской</div>
