@@ -91,7 +91,7 @@ Deno.serve(async (request) => {
     return reply(request, 400, { error: 'Invalid JSON' });
   }
 
-  const { name, phone, occasion, comment, company, consentData, consentTransfer } = data;
+  const { name, phone, occasion, comment, company, consentData, consentTransfer, source } = data;
 
   // Honeypot: заявку отправил бот — тихо принимаем, но никуда не шлём.
   if (company) return reply(request, 200, { ok: true });
@@ -129,6 +129,7 @@ Deno.serve(async (request) => {
     `Телефон: ${clean(cleanPhone, 20)}\n` +
     `Повод: ${clean(occasion || '—', 100)}\n` +
     `Комментарий: ${clean(comment || '—')}\n\n` +
+    `Источник: ${clean(source || 'неизвестно', 200)}\n\n` +
     `Согласие на обработку ПД: получено\n` +
     `Согласие на трансграничную передачу: получено\n` +
     `Время: ${new Date().toISOString()}`;

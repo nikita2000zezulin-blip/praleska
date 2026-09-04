@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://fzcswoywkwdkdpsowiqz.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://mc.yandex.ru; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://mc.yandex.ru; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://fzcswoywkwdkdpsowiqz.supabase.co https://mc.yandex.ru; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src https://mc.yandex.ru; upgrade-insecure-requests">
   <!-- CSP задан в разметке: на GitHub Pages нельзя выставлять HTTP-заголовки,
        как это делал netlify.toml. frame-ancestors в meta не работает — от
        встраивания в чужой iframe защищает скрипт внизу страницы. -->
@@ -13,6 +13,9 @@
   // Адрес бэкенда. Сайт лежит на статике (GitHub Pages), а функции — в Supabase,
   // поэтому запросы уходят на другой домен. Переезд бэкенда = правка этой строки.
   const API_BASE = 'https://fzcswoywkwdkdpsowiqz.supabase.co/functions/v1';
+  // Номер счётчика Яндекс.Метрики. 0 = аналитика выключена и ничего не грузится.
+  // Счётчик заводится на metrika.yandex.by, номер видно в списке счётчиков.
+  const METRIKA_ID = 0;
   // Замена X-Frame-Options: на GitHub Pages заголовки не выставить,
   // а frame-ancestors из <meta> браузеры игнорируют.
   if (self !== top) top.location = self.location;
@@ -25,6 +28,14 @@
   <meta property="og:description"
     content="Букеты на заказ, оформление праздников и доставка по Могилёву в день заказа.">
   <meta property="og:locale" content="ru_RU">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:url" content="https://praleskaby.github.io/">
+  <meta property="og:site_name" content="Пралеска">
+  <meta property="og:image" content="https://praleskaby.github.io/img/og-cover.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Витрина цветочной мастерской «Пралеска» в Могилёве">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="https://praleskaby.github.io/">
   <link rel="icon"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%236C56A6' opacity='0.9'/%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%238A72C0' opacity='0.55' transform='rotate(60 24 14)'/%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%238A72C0' opacity='0.55' transform='rotate(120 24 14)'/%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%236C56A6' opacity='0.9' transform='rotate(180 24 14)'/%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%238A72C0' opacity='0.55' transform='rotate(240 24 14)'/%3E%3Cellipse cx='24' cy='14' rx='7' ry='10' fill='%238A72C0' opacity='0.55' transform='rotate(300 24 14)'/%3E%3Ccircle cx='24' cy='14' r='4' fill='%23C6A15B'/%3E%3C/svg%3E">
@@ -38,12 +49,29 @@
     "@context": "https://schema.org",
     "@type": "FloristShop",
     "name": "Пралеска",
+    "legalName": "Частное торговое унитарное предприятие «Розали»",
+    "taxID": "790658935",
     "description": "Цветочная мастерская: букеты на заказ, оформление праздников и свадеб, доставка по Могилёву в день заказа.",
     "areaServed": { "@type": "City", "name": "Могилёв" },
-    "address": { "@type": "PostalAddress", "addressLocality": "Могилёв", "addressCountry": "BY" },
+    "address": { "@type": "PostalAddress", "streetAddress": "ул. Космонавтов, 30А", "postalCode": "212009", "addressLocality": "Могилёв", "addressCountry": "BY" },
     "telephone": "+375291400169",
     "openingHoursSpecification": { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"], "opens": "08:00", "closes": "20:00" },
     "url": "https://praleskaby.github.io/",
+    "image": "https://praleskaby.github.io/img/og-cover.jpg",
+    "priceRange": "10–245 BYN",
+    "currenciesAccepted": "BYN",
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Услуги «Пралески»",
+      "itemListElement": [
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Букеты на заказ", "description": "Соберём индивидуальный букет под ваш вкус, повод и бюджет." } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Доставка по Могилёву", "description": "Доставляем в день заказа, бережно упаковываем каждый букет." } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Оформление мероприятий", "description": "Свадьбы, юбилеи, открытия — цветочное оформление под ключ." } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Композиции в коробках", "description": "Стильный подарок без хлопот с вазой — красиво и удобно." } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Цветы для организаций", "description": "Постоянным клиентам и по подписке — регулярные поставки." } },
+        { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Помощь с выбором", "description": "Не знаете, что выбрать? Подберём букет вместе с вами." } }
+      ]
+    },
     "sameAs": ["https://www.instagram.com/tsvetypraleska/"]
   }
   </script>
@@ -1496,6 +1524,17 @@
       flex-shrink: 0;
     }
 
+    /* Баннер тёмный — обычный .btn-outline на нём не читается. */
+    .cookie-banner .btn-outline {
+      color: rgba(255, 255, 255, 0.92);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .cookie-banner .btn-outline:hover {
+      color: var(--white);
+      border-color: var(--white);
+    }
+
     /* ---------- CONSENT CHECKBOXES ---------- */
     .consent-row {
       display: flex;
@@ -1944,8 +1983,8 @@
   <section class="section-pad" id="about">
     <div class="container about-grid">
       <div class="about-visual">
-        <img src="img/shop-1.jpg" alt="Витрина цветочной мастерской «Пралеска» в Могилёве" loading="lazy">
-        <img src="img/shop-2.jpg" alt="Торговый зал «Пралески»: холодильные витрины с букетами и живыми цветами" loading="lazy">
+        <img src="img/shop-1.webp" alt="Витрина цветочной мастерской «Пралеска» в Могилёве" loading="lazy">
+        <img src="img/shop-2.webp" alt="Торговый зал «Пралески»: холодильные витрины с букетами и живыми цветами" loading="lazy">
       </div>
       <div class="about-copy">
         <div class="eyebrow">О мастерской</div>
@@ -2013,7 +2052,8 @@
           </svg>
           <div>
             <div class="label">Телефон</div>
-            <div class="value"><a href="tel:+375291400169">+375 29 140-01-69</a></div>
+            <div class="value"><a href="tel:+375291400169" data-goal="call">+375 29 140-01-69</a></div>
+            <div class="value"><a href="viber://chat?number=%2B375291400169" data-goal="viber">Написать в Viber</a></div>
           </div>
         </div>
         <div class="info-row">
@@ -2152,13 +2192,14 @@
         </div>
         <div class="footer-col">
           <h4>Контакты</h4>
-          <a href="tel:+375291400169">+375 29 140-01-69</a>
+          <a href="tel:+375291400169" data-goal="call">+375 29 140-01-69</a>
+          <a href="viber://chat?number=%2B375291400169" data-goal="viber">Viber</a>
           <a href="https://www.instagram.com/tsvetypraleska/" target="_blank" rel="noopener">Instagram</a>
           <span>Могилёв, ежедневно 8:00–20:00 · доставка от 65 руб. бесплатно</span>
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© 2026 Пралеска. Цветы в Могилёве.</span>
+        <span>© 2026 Пралеска. Цветы в Могилёве. ЧТУП «Розали», УНП 790658935.</span>
         <a href="privacy.html">Политика конфиденциальности</a>
       </div>
     </div>
@@ -2166,15 +2207,18 @@
 
   <!-- ================= STICKY MOBILE CTA ================= -->
   <div class="sticky-cta" id="stickyCta">
-    <a href="tel:+375291400169" class="btn btn-outline btn-sm">Позвонить</a>
-    <a href="#contact" class="btn btn-primary btn-sm">Оставить заявку</a>
+    <a href="tel:+375291400169" class="btn btn-outline btn-sm" data-goal="call">Позвонить</a>
+    <a href="viber://chat?number=%2B375291400169" class="btn btn-outline btn-sm" data-goal="viber">Viber</a>
+    <a href="#contact" class="btn btn-primary btn-sm">Заявка</a>
   </div>
 
   <!-- ================= COOKIE BANNER ================= -->
   <div class="cookie-banner" id="cookieBanner">
-    <p>Сайт использует только технические файлы (для работы сайта и загрузки шрифтов) — без рекламных и аналитических
-      cookies. Подробнее — в <a href="privacy.html">Политике конфиденциальности</a>.</p>
-    <button class="btn btn-primary" id="cookieAcceptBtn">Понятно</button>
+    <p>Технические файлы нужны для работы сайта. С вашего согласия мы также включаем Яндекс.Метрику —
+      она обезличенно считает, какими разделами пользуются чаще. Подробнее — в
+      <a href="privacy.html">Политике конфиденциальности</a>.</p>
+    <button class="btn btn-outline" id="cookieDenyBtn">Только необходимые</button>
+    <button class="btn btn-primary" id="cookieAcceptBtn">Принять</button>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
@@ -2237,48 +2281,79 @@
 
     /* ---------- Данные: букеты (примеры — замените на реальные позиции и фото) ---------- */
     const bouquets = [
-      { id: 'r1', name: '«Нежность»', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема, эвкалипт, флористическая упаковка.', price: '70 руб.', img: 'img/bouquets/r1.jpg' },
-      { id: 'r2', name: '«Признание»', tag: 'Букеты авторские', cat: 'author', desc: 'Хризантема, роза, альстромерия, диантус, флористическая упаковка.', price: '95 руб.', img: 'img/bouquets/r2.jpg' },
-      { id: 'r3', name: 'Букет из хризантем', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема Алтай, 15 веток.', price: '150 руб.', img: 'img/bouquets/r3.jpg' },
-      { id: 'r4', name: '«Розовое облако»', tag: 'Букеты авторские', cat: 'author', desc: 'Хризантема, диантусы, альстромерия, флористическая упаковка.', price: '80 руб.', img: 'img/bouquets/r4.jpg' },
-      { id: 'r5', name: 'Букет ромашковый', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема, ромашка, 11 веток.', price: '110 руб.', img: 'img/bouquets/r5.jpg' },
-      { id: 'r6', name: '«Зефирка»', tag: 'Букеты авторские', cat: 'author', desc: 'Французская роза, 11 шт.', price: '105 руб.', img: 'img/bouquets/r6.jpg' },
-      { id: 'r7', name: '«Признание» (мини)', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 5 шт.', price: '65 руб.', img: 'img/bouquets/r7.jpg' },
-      { id: 'r8', name: '«Премиум»', tag: 'Премиум', cat: 'premium', desc: 'Роза, 25 шт., флористическая упаковка.', price: '215 руб.', img: 'img/bouquets/r8.jpg' },
-      { id: 'r9', name: '«Дерзость»', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 35 шт.', price: '245 руб.', img: 'img/bouquets/r9.jpg' },
-      { id: 'r10', name: '«Премиум микс»', tag: 'Премиум', cat: 'premium', desc: 'Роза, хризантема Грин, альстромерия, флористическая упаковка.', price: '200 руб.', img: 'img/bouquets/r10.jpg' },
-      { id: 'r11', name: '«Для неё»', tag: 'Букеты авторские', cat: 'author', desc: 'Роза красная, хризантема, альстромерия, флористическая упаковка.', price: '125 руб.', img: 'img/bouquets/r11.jpg' },
-      { id: 'r12', name: '«Алая роза»', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 21 шт.', price: '155 руб.', img: 'img/bouquets/r12.jpg' },
-      { id: 'r13', name: 'Букет из роз', tag: 'Букеты', cat: 'bouquets', desc: 'Роза, 25 шт.', price: '195 руб.', img: 'img/bouquets/r13.jpg' },
-      { id: 'r14', name: '«Шик»', tag: 'Букеты авторские', cat: 'author', desc: 'Роза пионовидная, 25 шт.', price: '240 руб.', img: 'img/bouquets/r14.jpg' },
-      { id: 'r15', name: 'Букет из роз', tag: 'Букеты', cat: 'bouquets', desc: 'Красные розы, эвкалипт, флористическая упаковка.', price: '85 руб.', img: 'img/bouquets/r15.jpg' },
-      { id: 'r16', name: 'Букет микс', tag: 'Букеты', cat: 'bouquets', desc: 'Микс из роз, хризантем и диантусов, флористическая упаковка.', price: '135 руб.', img: 'img/bouquets/r16.jpg' },
-      { id: 'r17', name: 'Букет из хризантем', tag: 'Букеты', cat: 'bouquets', desc: 'Разноцветные хризантемы, флористическая упаковка.', price: '95 руб.', img: 'img/bouquets/r17.jpg' },
-      { id: 'r18', name: 'Букет «Вероника»', tag: 'Букеты', cat: 'bouquets', desc: 'Белые и розовые хризантемы, флористическая упаковка.', price: '110 руб.', img: 'img/bouquets/r18.jpg' },
-      { id: 'r19', name: 'Корзина из роз, 21 шт.', tag: 'Корзина цветов', cat: 'basket', desc: 'Розы, 21 шт., эвкалипт, плетёная корзина.', price: '195 руб.', img: 'img/bouquets/r19.jpg' },
-      { id: 'r20', name: 'Корзина «Нежность»', tag: 'Корзина цветов', cat: 'basket', desc: 'Розовые хризантемы и розы, эвкалипт, плетёная корзина, атласная лента.', price: '155 руб.', img: 'img/bouquets/r20.jpg' },
-      { id: 'r21', name: 'Композиция из хризантем', tag: 'Композиции', cat: 'composition', desc: 'Белые хризантемы в шляпной коробке, декор из бусин.', price: '80 руб.', img: 'img/bouquets/r21.jpg' },
-      { id: 'r22', name: 'Букет из диантусов', tag: 'Букеты', cat: 'bouquets', desc: 'Розовые диантусы, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r22.jpg' },
-      { id: 'r23', name: 'Букет «Для неё»', tag: 'Букеты', cat: 'bouquets', desc: 'Розы и хризантемы, эвкалипт, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r23.jpg' },
-      { id: 'r24', name: 'Букет из белых роз', tag: 'Букеты', cat: 'bouquets', desc: 'Белые кустовые розы, зелень, флористическая упаковка.', price: '180 руб.', img: 'img/bouquets/r24.jpg' },
-      { id: 'r25', name: 'Композиция в шляпной коробке «Акцент»', tag: 'Композиции', cat: 'composition', desc: 'Герберы, розы и хризантемы в шляпной коробке.', price: '175 руб.', img: 'img/bouquets/r25.jpg' },
-      { id: 'r26', name: 'Композиция «Очарование»', tag: 'Композиции', cat: 'composition', desc: 'Розы, хризантемы и альстромерии в шляпной коробке.', price: '130 руб.', img: 'img/bouquets/r26.jpg' },
-      { id: 'r27', name: 'Медведь с сердцем, 55 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 55 см с мягким сердцем.', price: '76 руб.', img: 'img/bouquets/r27.jpg' },
-      { id: 'r28', name: 'Медведь Тедди, 50 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь Тедди 50 см в кофточке с сердцем.', price: '78 руб.', img: 'img/bouquets/r28.jpg' },
-      { id: 'r29', name: 'Розовый мишка, 50 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 50 см, розовый, с бантом.', price: '70 руб.', img: 'img/bouquets/r29.jpg' },
-      { id: 'r30', name: 'Плюшевый медведь, 55 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 55 см с бантом.', price: '73 руб.', img: 'img/bouquets/r30.jpg' },
-      { id: 'r31', name: 'Композиция в сумочке', tag: 'Композиции', cat: 'composition', desc: 'Кремовые розы и зелень в сумочке-кашпо.', price: '95 руб.', img: 'img/bouquets/r31.jpg' },
-      { id: 'r32', name: 'Композиция из ромашек', tag: 'Композиции', cat: 'composition', desc: 'Ромашковые хризантемы в шляпной коробке.', price: '75 руб.', img: 'img/bouquets/r32.jpg' },
-      { id: 'r33', name: 'Шары-цифры с гелием, 100 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированные шары-цифры 100 см: золото, серебро, розовое золото. Цена за 1 цифру.', price: '27 руб.', img: 'img/bouquets/r33.jpg' },
-      { id: 'r34', name: 'Мини-мишка', tag: 'Шары и игрушки', cat: 'toys', desc: 'Небольшая мягкая игрушка — медвежонок с бантом.', price: '30 руб.', img: 'img/bouquets/r34.jpg' },
-      { id: 'r35', name: 'Шар-звезда с гелием', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированный шар-звезда с гелием. Цена за 1 шт.', price: '10 руб.', img: 'img/bouquets/r35.jpg' },
-      { id: 'r36', name: 'Шар-сердце с гелием', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированный шар-сердце с гелием. Цена за 1 шт.', price: '10 руб.', img: 'img/bouquets/r36.jpg' },
-      { id: 'r37', name: 'Композиция в сумочке «Признание»', tag: 'Композиции', cat: 'composition', desc: 'Красные розы и эвкалипт в сумочке-кашпо.', price: '80 руб.', img: 'img/bouquets/r37.jpg' },
-      { id: 'r38', name: 'Композиция микс', tag: 'Композиции', cat: 'composition', desc: 'Микс из хризантем и диантусов в шляпной коробке.', price: '140 руб.', img: 'img/bouquets/r38.jpg' },
-      { id: 'r39', name: 'Композиция «Барби»', tag: 'Композиции', cat: 'composition', desc: 'Яркий микс из роз и хризантем в шляпной коробке.', price: '120 руб.', img: 'img/bouquets/r39.jpg' },
-      { id: 'r40', name: 'Композиция «От всего сердца»', tag: 'Композиции', cat: 'composition', desc: 'Нежный микс из диантусов и зелени в шляпной коробке.', price: '90 руб.', img: 'img/bouquets/r40.jpg' },
-      { id: 'r41', name: 'Букет «Любовь»', tag: 'Букеты', cat: 'bouquets', desc: 'Красные розы, эвкалипт, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r41.jpg' },
+      { id: 'r1', name: '«Нежность»', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема, эвкалипт, флористическая упаковка.', price: '70 руб.', img: 'img/bouquets/r1.webp' },
+      { id: 'r2', name: '«Признание»', tag: 'Букеты авторские', cat: 'author', desc: 'Хризантема, роза, альстромерия, диантус, флористическая упаковка.', price: '95 руб.', img: 'img/bouquets/r2.webp' },
+      { id: 'r3', name: 'Букет из хризантем', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема Алтай, 15 веток.', price: '150 руб.', img: 'img/bouquets/r3.webp' },
+      { id: 'r4', name: '«Розовое облако»', tag: 'Букеты авторские', cat: 'author', desc: 'Хризантема, диантусы, альстромерия, флористическая упаковка.', price: '80 руб.', img: 'img/bouquets/r4.webp' },
+      { id: 'r5', name: 'Букет ромашковый', tag: 'Букеты', cat: 'bouquets', desc: 'Хризантема, ромашка, 11 веток.', price: '110 руб.', img: 'img/bouquets/r5.webp' },
+      { id: 'r6', name: '«Зефирка»', tag: 'Букеты авторские', cat: 'author', desc: 'Французская роза, 11 шт.', price: '105 руб.', img: 'img/bouquets/r6.webp' },
+      { id: 'r7', name: '«Признание» (мини)', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 5 шт.', price: '65 руб.', img: 'img/bouquets/r7.webp' },
+      { id: 'r8', name: '«Премиум»', tag: 'Премиум', cat: 'premium', desc: 'Роза, 25 шт., флористическая упаковка.', price: '215 руб.', img: 'img/bouquets/r8.webp' },
+      { id: 'r9', name: '«Дерзость»', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 35 шт.', price: '245 руб.', img: 'img/bouquets/r9.webp' },
+      { id: 'r10', name: '«Премиум микс»', tag: 'Премиум', cat: 'premium', desc: 'Роза, хризантема Грин, альстромерия, флористическая упаковка.', price: '200 руб.', img: 'img/bouquets/r10.webp' },
+      { id: 'r11', name: '«Для неё»', tag: 'Букеты авторские', cat: 'author', desc: 'Роза красная, хризантема, альстромерия, флористическая упаковка.', price: '125 руб.', img: 'img/bouquets/r11.webp' },
+      { id: 'r12', name: '«Алая роза»', tag: 'Букеты', cat: 'bouquets', desc: 'Роза красная, 21 шт.', price: '155 руб.', img: 'img/bouquets/r12.webp' },
+      { id: 'r13', name: 'Букет из роз', tag: 'Букеты', cat: 'bouquets', desc: 'Роза, 25 шт.', price: '195 руб.', img: 'img/bouquets/r13.webp' },
+      { id: 'r14', name: '«Шик»', tag: 'Букеты авторские', cat: 'author', desc: 'Роза пионовидная, 25 шт.', price: '240 руб.', img: 'img/bouquets/r14.webp' },
+      { id: 'r15', name: 'Букет из роз', tag: 'Букеты', cat: 'bouquets', desc: 'Красные розы, эвкалипт, флористическая упаковка.', price: '85 руб.', img: 'img/bouquets/r15.webp' },
+      { id: 'r16', name: 'Букет микс', tag: 'Букеты', cat: 'bouquets', desc: 'Микс из роз, хризантем и диантусов, флористическая упаковка.', price: '135 руб.', img: 'img/bouquets/r16.webp' },
+      { id: 'r17', name: 'Букет из хризантем', tag: 'Букеты', cat: 'bouquets', desc: 'Разноцветные хризантемы, флористическая упаковка.', price: '95 руб.', img: 'img/bouquets/r17.webp' },
+      { id: 'r18', name: 'Букет «Вероника»', tag: 'Букеты', cat: 'bouquets', desc: 'Белые и розовые хризантемы, флористическая упаковка.', price: '110 руб.', img: 'img/bouquets/r18.webp' },
+      { id: 'r19', name: 'Корзина из роз, 21 шт.', tag: 'Корзина цветов', cat: 'basket', desc: 'Розы, 21 шт., эвкалипт, плетёная корзина.', price: '195 руб.', img: 'img/bouquets/r19.webp' },
+      { id: 'r20', name: 'Корзина «Нежность»', tag: 'Корзина цветов', cat: 'basket', desc: 'Розовые хризантемы и розы, эвкалипт, плетёная корзина, атласная лента.', price: '155 руб.', img: 'img/bouquets/r20.webp' },
+      { id: 'r21', name: 'Композиция из хризантем', tag: 'Композиции', cat: 'composition', desc: 'Белые хризантемы в шляпной коробке, декор из бусин.', price: '80 руб.', img: 'img/bouquets/r21.webp' },
+      { id: 'r22', name: 'Букет из диантусов', tag: 'Букеты', cat: 'bouquets', desc: 'Розовые диантусы, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r22.webp' },
+      { id: 'r23', name: 'Букет «Для неё»', tag: 'Букеты', cat: 'bouquets', desc: 'Розы и хризантемы, эвкалипт, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r23.webp' },
+      { id: 'r24', name: 'Букет из белых роз', tag: 'Букеты', cat: 'bouquets', desc: 'Белые кустовые розы, зелень, флористическая упаковка.', price: '180 руб.', img: 'img/bouquets/r24.webp' },
+      { id: 'r25', name: 'Композиция в шляпной коробке «Акцент»', tag: 'Композиции', cat: 'composition', desc: 'Герберы, розы и хризантемы в шляпной коробке.', price: '175 руб.', img: 'img/bouquets/r25.webp' },
+      { id: 'r26', name: 'Композиция «Очарование»', tag: 'Композиции', cat: 'composition', desc: 'Розы, хризантемы и альстромерии в шляпной коробке.', price: '130 руб.', img: 'img/bouquets/r26.webp' },
+      { id: 'r27', name: 'Медведь с сердцем, 55 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 55 см с мягким сердцем.', price: '76 руб.', img: 'img/bouquets/r27.webp' },
+      { id: 'r28', name: 'Медведь Тедди, 50 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь Тедди 50 см в кофточке с сердцем.', price: '78 руб.', img: 'img/bouquets/r28.webp' },
+      { id: 'r29', name: 'Розовый мишка, 50 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 50 см, розовый, с бантом.', price: '70 руб.', img: 'img/bouquets/r29.webp' },
+      { id: 'r30', name: 'Плюшевый медведь, 55 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Плюшевый медведь 55 см с бантом.', price: '73 руб.', img: 'img/bouquets/r30.webp' },
+      { id: 'r31', name: 'Композиция в сумочке', tag: 'Композиции', cat: 'composition', desc: 'Кремовые розы и зелень в сумочке-кашпо.', price: '95 руб.', img: 'img/bouquets/r31.webp' },
+      { id: 'r32', name: 'Композиция из ромашек', tag: 'Композиции', cat: 'composition', desc: 'Ромашковые хризантемы в шляпной коробке.', price: '75 руб.', img: 'img/bouquets/r32.webp' },
+      { id: 'r33', name: 'Шары-цифры с гелием, 100 см', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированные шары-цифры 100 см: золото, серебро, розовое золото. Цена за 1 цифру.', price: '27 руб.', img: 'img/bouquets/r33.webp' },
+      { id: 'r34', name: 'Мини-мишка', tag: 'Шары и игрушки', cat: 'toys', desc: 'Небольшая мягкая игрушка — медвежонок с бантом.', price: '30 руб.', img: 'img/bouquets/r34.webp' },
+      { id: 'r35', name: 'Шар-звезда с гелием', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированный шар-звезда с гелием. Цена за 1 шт.', price: '10 руб.', img: 'img/bouquets/r35.webp' },
+      { id: 'r36', name: 'Шар-сердце с гелием', tag: 'Шары и игрушки', cat: 'toys', desc: 'Фольгированный шар-сердце с гелием. Цена за 1 шт.', price: '10 руб.', img: 'img/bouquets/r36.webp' },
+      { id: 'r37', name: 'Композиция в сумочке «Признание»', tag: 'Композиции', cat: 'composition', desc: 'Красные розы и эвкалипт в сумочке-кашпо.', price: '80 руб.', img: 'img/bouquets/r37.webp' },
+      { id: 'r38', name: 'Композиция микс', tag: 'Композиции', cat: 'composition', desc: 'Микс из хризантем и диантусов в шляпной коробке.', price: '140 руб.', img: 'img/bouquets/r38.webp' },
+      { id: 'r39', name: 'Композиция «Барби»', tag: 'Композиции', cat: 'composition', desc: 'Яркий микс из роз и хризантем в шляпной коробке.', price: '120 руб.', img: 'img/bouquets/r39.webp' },
+      { id: 'r40', name: 'Композиция «От всего сердца»', tag: 'Композиции', cat: 'composition', desc: 'Нежный микс из диантусов и зелени в шляпной коробке.', price: '90 руб.', img: 'img/bouquets/r40.webp' },
+      { id: 'r41', name: 'Букет «Любовь»', tag: 'Букеты', cat: 'bouquets', desc: 'Красные розы, эвкалипт, флористическая упаковка.', price: '65 руб.', img: 'img/bouquets/r41.webp' },
     ];
+
+    /* ---------- SEO: карточки каталога рисует JS, поэтому ItemList для поисковиков
+       собираем из того же массива — не разъедется при правке цен и состава.
+       ponytail: рассчитано на то, что краулер выполняет JS; если Яндекс не подхватит —
+       запечь этот блок статикой в <head>. Наличие не указываем: им управляет Firebase. */
+    document.head.appendChild(Object.assign(document.createElement('script'), {
+      type: 'application/ld+json',
+      textContent: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        name: 'Каталог букетов и композиций «Пралеска», Могилёв',
+        itemListElement: bouquets.map((b, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'Product',
+            name: b.name,
+            description: b.desc,
+            category: b.tag,
+            url: 'https://praleskaby.github.io/#bouquets',
+            ...(b.img ? { image: 'https://praleskaby.github.io/' + b.img } : {}),
+            offers: {
+              '@type': 'Offer',
+              price: parseFloat(b.price),
+              priceCurrency: 'BYN',
+              seller: { '@type': 'FloristShop', name: 'Пралеска' }
+            }
+          }
+        }))
+      })
+    }));
 
     const bouquetGrid = document.getElementById('bouquetGrid');
     bouquets.forEach((b) => {
@@ -2467,7 +2542,50 @@
       tipsGrid.appendChild(card);
     });
 
-    /* ---------- Форма заявки → Netlify Function → Telegram ----------
+    /* ---------- Откуда пришёл посетитель ----------
+       Метки рекламы живут только в первом URL сессии, поэтому сразу
+       запоминаем их и прикладываем к заявке — иначе непонятно,
+       какой канал реально приносит заказы, а какой жжёт бюджет. */
+    const visitSource = (() => {
+      const KEY = 'praleska_src';
+      try {
+        const saved = sessionStorage.getItem(KEY);
+        if (saved) return saved;
+        const q = new URLSearchParams(location.search);
+        const utm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
+          .map((k) => q.get(k)).filter(Boolean).join(' / ');
+        const ref = document.referrer && new URL(document.referrer).hostname;
+        const src = utm || (ref ? 'переход с ' + ref : 'прямой заход');
+        sessionStorage.setItem(KEY, src);
+        return src;
+      } catch {
+        return 'неизвестно';
+      }
+    })();
+
+    /* ---------- Яндекс.Метрика ----------
+       Грузится только после согласия на аналитические cookies и только если
+       вписан номер счётчика. Google Analytics не ставим: Google не обслуживает
+       рекламодателей из Беларуси, а Метрика ещё и кормит данными Директ. */
+    function initMetrika() {
+      if (!METRIKA_ID || window.ym) return;
+      (function (m, e, t, r, i, k, a) {
+        m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
+        m[i].l = 1 * new Date();
+        k = e.createElement(t); a = e.getElementsByTagName(t)[0];
+        k.async = 1; k.src = r; a.parentNode.insertBefore(k, a);
+      })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+      ym(METRIKA_ID, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: true });
+    }
+    // Цель = событие, по которому в Директе считается конверсия.
+    const goal = (name) => window.ym && ym(METRIKA_ID, 'reachGoal', name);
+
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a[data-goal], a[href*="instagram.com"]');
+      if (a) goal(a.dataset.goal || 'instagram');
+    });
+
+    /* ---------- Форма заявки → Supabase Edge Function → Telegram ----------
        Токен бота хранится на сервере (переменные окружения Netlify),
        а не в этом файле — см. netlify/functions/send-order.mjs. */
     const orderForm = document.getElementById('orderForm');
@@ -2508,11 +2626,12 @@
         const res = await fetch(API_BASE + '/send-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, occasion, comment, company, consentData, consentTransfer })
+          body: JSON.stringify({ name, phone, occasion, comment, company, consentData, consentTransfer, source: visitSource })
         });
         if (!res.ok) throw new Error('Send failed');
         showStatus('Спасибо! Заявка отправлена — мы свяжемся с вами в течение часа 🌸', true);
         orderForm.reset();
+        goal('order');
       } catch (err) {
         showStatus('Не удалось отправить заявку. Позвоните нам напрямую — контакты слева.', false);
       } finally {
@@ -2527,15 +2646,20 @@
     }
 
     /* ---------- Уведомление о cookies ---------- */
+    // Ключ новый: старый praleska_cookie_ack ставился под текст «аналитики нет»,
+    // согласием на Метрику он быть не может — таких посетителей спрашиваем заново.
     const cookieBanner = document.getElementById('cookieBanner');
-    const cookieAcceptBtn = document.getElementById('cookieAcceptBtn');
-    if (!localStorage.getItem('praleska_cookie_ack')) {
-      cookieBanner.classList.add('show');
-    }
-    cookieAcceptBtn.addEventListener('click', () => {
-      localStorage.setItem('praleska_cookie_ack', '1');
+    const consent = localStorage.getItem('praleska_consent');
+    if (!consent) cookieBanner.classList.add('show');
+    if (consent === 'all') initMetrika();
+
+    const answer = (value) => {
+      localStorage.setItem('praleska_consent', value);
       cookieBanner.classList.remove('show');
-    });
+      if (value === 'all') initMetrika();
+    };
+    document.getElementById('cookieAcceptBtn').addEventListener('click', () => answer('all'));
+    document.getElementById('cookieDenyBtn').addEventListener('click', () => answer('necessary'));
   </script>
   <!-- Появление секций при скролле -->
   <script>
