@@ -17,6 +17,9 @@ const WINDOW_MS = 15 * 60 * 1000;
 // 5, а не 3: у мобильных операторов десятки абонентов сидят за одним IP,
 // и слишком строгий лимит отсёк бы живого клиента.
 const PER_IP_LIMIT = 5;
+
+// Сбрасывается в false, если миграция orders-consent.sql ещё не выполнена.
+let ordersHasConsent = true;
 const GLOBAL_LIMIT = 30;
 
 const hits = new Map<string, number[]>();
@@ -157,9 +160,15 @@ Deno.serve(async (request) => {
   // от записи в базу. Лог заявок пишем best-effort и не роняем ответ клиенту при сбое.
   const supaUrl = Deno.env.get('SUPABASE_URL');
   const supaKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  // Колонки согласий появляются только после orders-consent.sql. Пока миграции нет,
+  // вставка с ними вернула бы 400 и лог заявок молча перестал бы писаться, поэтому
+  // один раз пробуем с ними и при отказе схемы переключаемся обратно навсегда.
+  const consentCols = ordersHasConsent
+    ? { consent_data: true, consent_transfer: true, consent_at: new Date().toISOString() }
+    : {};
   if (supaUrl && supaKey) {
     try {
-      await fetch(`${supaUrl}/rest/v1/orders`, {
+      const insert = await fetch(`${supaUrl}/rest/v1/orders`, {
         method: 'POST',
         headers: {
           apikey: supaKey,
@@ -172,9 +181,15 @@ Deno.serve(async (request) => {
           phone: clean(cleanPhone, 20),
           occasion: clean(occasion || '', 100),
           comment: clean(comment || ''),
+          ...consentCols,
         }),
         signal: AbortSignal.timeout(8000),
       });
+      // 400 «column does not exist» = миграция не выполнена: больше не пробуем.
+      if (insert.status === 400 && ordersHasConsent) {
+        ordersHasConsent = false;
+        console.error('orders: колонок согласий нет, выполните supabase/orders-consent.sql');
+      }
     } catch {
       // Молча игнорируем — заявка у клиента уже считается отправленной.
     }
