@@ -2,9 +2,12 @@
 import { chromium } from 'file:///C:/Users/USER1/.bun/install/cache/playwright-core/1.62.1@@@1/index.mjs';
 import assert from 'node:assert';
 
+// Без аргумента — локальный сервер, с аргументом — боевой адрес.
+const BASE = process.argv[2] || 'http://127.0.0.1:8899';
+
 const b = await chromium.launch({ channel: 'msedge' });
 const p = await b.newPage();
-await p.goto('http://127.0.0.1:8899/', { waitUntil: 'domcontentloaded' });
+await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
 
 await p.waitForFunction(() => document.querySelectorAll('script[type="application/ld+json"]').length >= 2);
 const ld = await p.$$eval('script[type="application/ld+json"]', ns => ns.map(n => JSON.parse(n.textContent)));
@@ -19,7 +22,7 @@ const meta = await p.$$eval('meta[property], meta[name], link[rel=canonical]',
 for (const k of ['description', 'robots', 'og:title', 'og:description', 'og:url', 'og:image', 'og:site_name', 'twitter:card', 'canonical'])
   assert(meta[k], 'нет ' + k);
 
-const og = await p.request.get(meta['og:image'].replace('https://praleskaby.github.io', 'http://127.0.0.1:8899'));
+const og = await p.request.get(meta['og:image'].replace('https://praleskaby.github.io', BASE));
 assert(og.ok(), 'og:image недоступна');
 
 // Метрика не должна грузиться до согласия
@@ -28,12 +31,21 @@ await banner.waitFor({ state: 'visible' });
 assert(!(await p.evaluate(() => 'ym' in window)), 'Метрика загрузилась до согласия');
 await p.click('#cookieDenyBtn');
 assert(await p.evaluate(() => localStorage.getItem('praleska_consent')) === 'necessary', 'отказ не сохранён');
+assert(!(await p.evaluate(() => 'ym' in window)), 'Метрика загрузилась после отказа');
+
+// ...и наоборот: после согласия счётчик должен подняться
+const p3 = await (await b.newContext()).newPage();
+const metrikaHit = p3.waitForRequest((r) => r.url().includes('mc.yandex.ru'), { timeout: 15000 });
+await p3.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+await p3.click('#cookieAcceptBtn');
+await metrikaHit;
+await p3.close();
 
 // Заявка уходит вместе с меткой источника.
 // Нужна чистая вкладка: метку источника запоминает sessionStorage, и она
 // осталась бы от предыдущего захода без utm — как и задумано в самом сайте.
 const p2 = await (await b.newContext()).newPage();
-await p2.goto('http://127.0.0.1:8899/?utm_source=test_ads&utm_campaign=mogilev', { waitUntil: 'domcontentloaded' });
+await p2.goto(BASE + '/?utm_source=test_ads&utm_campaign=mogilev', { waitUntil: 'domcontentloaded' });
 let body = null;
 await p2.route('**/functions/v1/send-order', (route) => {
   body = JSON.parse(route.request().postData());
